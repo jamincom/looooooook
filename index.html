@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>똑바로해</title>
+    <style>
+        @font-face {
+            font-family: 'LINESeedKR-Bd';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_11-01@1.0/LINESeedKR-Bd.woff2') format('woff2');
+            font-weight: 900;
+            font-style: normal;
+        }
+        body, html {
+            font-family: 'LINESeedKR-Bd', sans-serif;
+            font-weight: 900;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #webcam-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+        #webcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* 좌우 반전 */
+        }
+        .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0);
+            z-index: 10;
+        }
+        .left-buttons, .right-buttons {
+            display: flex;
+            align-items: center;
+        }
+        .button {
+            margin-left: 5px;
+            padding: 5px;
+            background-color: rgba(200, 200, 200, 0);
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            width: 100px;
+            font-family: 'LINESeedKR-Bd', sans-serif;
+            font-weight: 900;
+            font-size: 20px;
+        }
+        .person {
+            position: absolute;
+            background-size: cover;
+            background-position: center;
+            border: 0;
+        }
+        .popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .popup h1 {
+            margin: 0;
+            font-size: 48px;
+            text-align: center;
+        }
+        .popup p {
+            margin: 10px 0 0;
+            font-size: 20px;
+            text-align: center;
+        }
+        .close-popup-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: black;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-family: 'LINESeedKR-Bd', sans-serif;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="popup" id="popup">
+        <h1>집중합시다!</h1>
+        <p>감시해줘: 감시당하고 싶은 기분일 때 / 바라봐줘: 따뜻하게 보듬어지고 싶을 때 / ASMR</p>
+        <button class="close-popup-button" id="close-popup">팝업 끄기</button>
+    </div>
+    <div id="webcam-container">
+        <video id="webcam" autoplay playsinline></video>
+        <div class="top-bar">
+            <div class="left-buttons">
+                <button class="button" id="add-monitor">감시해줘</button>
+                <button class="button" id="add-warmth">바라봐줘</button>
+            </div>
+            <div class="right-buttons">
+                <button class="button" id="btn1"><font size="6px">🍂</font></button>
+                <button class="button" id="btn2"><font size="6px">☔️</font></button>
+                <button class="button" id="btn3"><font size="6px">🔥</font></button>
+                <button class="button" id="btn4"><font size="6px">🎹</font></button>
+                <button class="button" id="btn5"><font size="6px">😎</font></button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const videoElement = document.getElementById("webcam");
+        const addMonitorButton = document.getElementById("add-monitor");
+        const addWarmthButton = document.getElementById("add-warmth");
+        const webcamContainer = document.getElementById("webcam-container");
+
+        const monitorImages = [
+            'https://ifh.cc/g/jq9VgY.png',
+            'https://ifh.cc/g/wH8vlG.png',
+            'https://ifh.cc/g/M0hnvt.png',
+            'https://ifh.cc/g/H4DkjD.png',
+            'https://ifh.cc/g/JjP2QK.png',
+            'https://ifh.cc/g/cnw2mk.png',
+            'https://ifh.cc/g/wxySMd.png',
+            'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHhnYnJzdzlxa2lsNzR5aWg2NGU2Yjczc2Z4OXR0MmI0MHNveGdlMyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/gKHGnB1ml0moQdjhEJ/giphy.gif',
+            'https://media.giphy.com/media/ODy29v7YAJrck/giphy.gif?cid=790b7611tzavx1pc0z8wlm22og0qip4zcerck4dg49e2qf5s&ep=v1_gifs_search&rid=giphy.gif&ct=g',
+            'https://media.giphy.com/media/3o6fJd6iEkL8Ys7tsY/giphy.gif?cid=ecf05e4749ej2qvym78fmx1ni0amd4olhw71fpvgtqia6iel&ep=v1_gifs_search&rid=giphy.gif&ct=g',
+            'https://media.giphy.com/media/zSHXy5r1WlNc3bOSVD/giphy.gif?cid=ecf05e47k59qnzz6h780vrc6aqqjbgsr0ps7vcym4pa6sx5o&ep=v1_gifs_search&rid=giphy.gif&ct=g',
+            'https://ifh.cc/g/RdCqMO.png'
+        ];
+
+        const warmthImages = [
+            'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdHphdngxcGMwejh3bG0yMm9nMHFpcDR6Y2VyY2s0ZGc0OWUycWY1cyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/MDJ9IbxxvDUQM/giphy.gif',
+            'https://media.giphy.com/media/4MixZy6L7nBW8/giphy.gif?cid=ecf05e47cblxecmrfcck5fz9sob7p5i51dsz5nivno9ns4oe&ep=v1_gifs_search&rid=giphy.gif&ct=g',
+            'https://media.giphy.com/media/JgoR0nYkf8TXG/giphy.gif?cid=ecf05e47qjh4ksvhz1gvcuoidw630bm5n8vhrtjtudaj457n&ep=v1_gifs_search&rid=giphy.gif&ct=g'
+        ];
+
+        const bgmFiles = {
+            btn1: '1.ogg',
+            btn2: '2.ogg',
+            btn3: '3.ogg',
+            btn4: '4.ogg',
+            btn5: '5.ogg',
+        };
+
+        const bgmPlayers = {};
+
+        for (const [key, value] of Object.entries(bgmFiles)) {
+            bgmPlayers[key] = new Audio(value);
+        }
+
+        document.querySelectorAll('.button').forEach(button => {
+            if (button.id.startsWith('btn')) {
+                button.addEventListener('click', () => {
+                    const btnId = button.id;
+                    if (bgmPlayers[btnId].paused) {
+                        bgmPlayers[btnId].play();
+                    } else {
+                        bgmPlayers[btnId].pause();
+                        bgmPlayers[btnId].currentTime = 0;
+                    }
+                });
+            }
+        });
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                videoElement.srcObject = stream;
+            })
+            .catch((error) => {
+                console.error("Webcam access error:", error);
+            });
+
+        function addImage(imageUrls) {
+            const personDiv = document.createElement("div");
+            personDiv.classList.add("person");
+
+            const randomImage = imageUrls[Math.floor(Math.random() * imageUrls.length)];
+            personDiv.style.backgroundImage = `url('${randomImage}')`;
+
+            const centerX = webcamContainer.offsetWidth / 2;
+            const centerY = webcamContainer.offsetHeight / 2;
+
+            let randomX, randomY;
+            let distanceFromCenter;
+            const minDistanceFromCenter = 100;
+
+            do {
+                randomX = Math.random() * webcamContainer.offsetWidth;
+                randomY = Math.random() * webcamContainer.offsetHeight;
+                distanceFromCenter = Math.sqrt(Math.pow(randomX - centerX, 2) + Math.pow(randomY - centerY, 2));
+            } while (distanceFromCenter < minDistanceFromCenter);
+
+            const maxDistance = Math.sqrt(Math.pow(centerX, 2) + Math.pow(centerY, 2));
+
+            const minSize = 50;
+            const maxSize = 300;
+            const sizeScale = distanceFromCenter / maxDistance;
+            const size = minSize + (maxSize - minSize) * sizeScale;
+
+            personDiv.style.width = `${size}px`;
+            personDiv.style.height = `${size}px`;
+            personDiv.style.left = `${randomX}px`;
+            personDiv.style.top = `${randomY}px`;
+
+            webcamContainer.appendChild(personDiv);
+        }
+
+        const closePopupButton = document.getElementById("close-popup");
+        closePopupButton.addEventListener("click", () => {
+            const popup = document.getElementById("popup");
+            if (popup) {
+                popup.style.display = "none";
+            }
+        });
+
+        addMonitorButton.addEventListener("click", () => {
+            addImage(monitorImages);
+        });
+
+        addWarmthButton.addEventListener("click", () => {
+            addImage(warmthImages);
+        });
+    </script>
+</body>
+</html>
